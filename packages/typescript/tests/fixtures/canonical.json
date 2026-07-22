@@ -1,0 +1,4 @@
+{
+  "canonical_json": "{\"attributes\":{\"chosen_option\":\"deny\",\"kind\":\"planner_step\",\"options_considered\":[\"approve\",\"deny\",\"manual_review\"]},\"compliance\":{\"agent_version\":\"loan-agent@0.1.0\",\"policy_version_active\":\"lending-v2.3.1\",\"regulatory_regime\":[\"ECOA\",\"FCRA\"],\"subject_id\":null},\"end_time\":\"2026-05-17T12:00:02.000000Z\",\"inputs\":{\"amount\":25000,\"dti\":0.46},\"name\":\"underwrite_application\",\"outputs\":null,\"span_id\":\"1111111111111111\",\"start_time\":\"2026-05-17T12:00:00.123000Z\",\"status\":\"ok\",\"trajectory_id\":\"22222222222222222222222222222222\",\"type\":\"planner_step\"}",
+  "content_hash": "5815703b20870aea66a1205e2070c680336378dacd96ebc7764ab419c72d82b0"
+}

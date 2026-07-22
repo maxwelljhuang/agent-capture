@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ledger
+    volumes:
+      - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ledger"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  ledger:
+    build:
+      context: ../../..
+      dockerfile: packages/ledger/docker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      LEDGER_DATABASE_URL: postgresql+asyncpg://ledger_app:ledger_app@db:5432/ledger
+      LEDGER_DATABASE_URL_RETENTION: postgresql+asyncpg://ledger_retention:ledger_retention@db:5432/ledger
+      LEDGER_LOG_LEVEL: info
+    ports:
+      - "8443:8443"
+    command: ["sh", "-c", "ledger db migrate && ledger serve"]
+
+  crew_demo:
+    build:
+      context: ../../..
+      dockerfile: packages/ledger/docker/Dockerfile.crew
+    depends_on:
+      ledger:
+        condition: service_started
+    environment:
+      AGENT_CAPTURE_LEDGER_URL: http://ledger:8443/spans
+      AGENT_CAPTURE_LEDGER_TOKEN: ${AGENT_CAPTURE_LEDGER_TOKEN}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AGENT_CAPTURE_HMAC_KEY: demo-key
+    restart: "no"

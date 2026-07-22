@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: enforcement
+      POSTGRES_PASSWORD: enforcement
+      POSTGRES_DB: enforcement
+    ports:
+      - "5432:5432"
+    volumes:
+      - enforcement-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U enforcement -d enforcement"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  # Inline verdict service. Migrates the hold-queue schema, then serves.
+  enforcement:
+    build:
+      context: ../../..
+      dockerfile: packages/enforcement/docker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENFORCEMENT_DATABASE_URL: postgresql+asyncpg://enforcement:enforcement@db:5432/enforcement
+      ENFORCEMENT_LOG_LEVEL: info
+      # Mount a bank-authored rule file and point at it to enable rules:
+      # ENFORCEMENT_RULES_PATH: /app/rules.yaml
+    ports:
+      - "8475:8475"
+    entrypoint: ["tini", "--", "sh", "-c"]
+    command: ["enforcement db migrate && enforcement serve"]
+
+  # Hold-timeout worker (same image, different command).
+  worker:
+    build:
+      context: ../../..
+      dockerfile: packages/enforcement/docker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      enforcement:
+        condition: service_started
+    environment:
+      ENFORCEMENT_DATABASE_URL: postgresql+asyncpg://enforcement:enforcement@db:5432/enforcement
+      ENFORCEMENT_LOG_LEVEL: info
+    entrypoint: ["tini", "--", "enforcement"]
+    command: ["timeout-worker"]
+
+volumes:
+  enforcement-db-data: {}

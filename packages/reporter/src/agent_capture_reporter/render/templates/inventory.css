@@ -1,0 +1,78 @@
+@page {
+  size: Letter landscape;
+  margin: 0.6in 0.5in 0.7in 0.5in;
+  @bottom-center {
+    content: "SR 11-7 Model Inventory — page " counter(page) " of " counter(pages);
+    font-size: 8pt;
+    color: #555;
+  }
+}
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  line-height: 1.4;
+  color: #111;
+}
+
+h1 {
+  font-size: 15pt;
+  margin: 0 0 0.2em 0;
+}
+
+h2 {
+  font-size: 11pt;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 2px;
+  margin-top: 1.2em;
+}
+
+.meta {
+  font-size: 9pt;
+  color: #444;
+  margin-bottom: 0.6em;
+}
+
+.summary {
+  font-size: 9pt;
+  background: #f7f7f7;
+  border-left: 3px solid #999;
+  padding: 0.4em 0.8em;
+  margin: 0.6em 0;
+}
+
+table.inventory {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+}
+
+table.inventory th,
+table.inventory td {
+  border: 1px solid #ccc;
+  padding: 3px 5px;
+  vertical-align: top;
+  text-align: left;
+}
+
+table.inventory th {
+  background: #eee;
+  font-weight: bold;
+}
+
+tr.ungoverned td {
+  background: #fdecea;
+}
+
+.gap {
+  color: #b00020;
+  font-style: italic;
+}
+
+.note {
+  font-size: 8pt;
+  color: #666;
+  margin-top: 1em;
+  border-top: 1px solid #ddd;
+  padding-top: 0.4em;
+}

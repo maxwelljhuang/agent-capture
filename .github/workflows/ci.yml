@@ -1,0 +1,231 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**/*.md", "docs/**", "LICENSE"]
+  pull_request:
+    paths-ignore: ["**/*.md", "docs/**", "LICENSE"]
+
+# Cancel a superseded run when new commits land on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      # Full version matrix on main; a single version on PRs to save minutes.
+      matrix:
+        python-version: ${{ github.event_name == 'push' && fromJSON('["3.11", "3.12", "3.13"]') || fromJSON('["3.12"]') }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install
+        # Scope to the recorder package so the ledger's heavyweight
+        # deps (FastAPI, sqlalchemy, asyncpg, etc.) don't bloat the
+        # recorder's test venv and break its memory budget test.
+        run: uv sync --package agent-capture --all-extras --group dev
+      - name: Lint
+        run: uv run ruff check packages/python
+      - name: Format check
+        run: uv run ruff format --check packages/python
+      - name: Type check
+        run: uv run mypy --package agent_capture
+        working-directory: packages/python
+      - name: Test
+        run: uv run pytest -ra
+        working-directory: packages/python
+
+  ledger:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ledger
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ledger"
+          --health-interval 3s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install
+        # Scope to the ledger package + its heavy test deps.
+        run: uv sync --package agent-capture-ledger --group dev --group ledger-dev
+      - name: Lint
+        run: uv run ruff check packages/ledger
+      - name: Format check
+        run: uv run ruff format --check packages/ledger
+      - name: Type check
+        run: uv run mypy --package agent_capture_ledger
+        working-directory: packages/ledger
+      - name: Test
+        env:
+          LEDGER_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/ledger
+        run: uv run pytest -ra
+        working-directory: packages/ledger
+
+  reporter:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ${{ github.event_name == 'push' && fromJSON('["3.11", "3.12", "3.13"]') || fromJSON('["3.12"]') }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install
+        # Scope to the reporter package. PDF tests self-skip without WeasyPrint
+        # (the optional 'pdf' extra is not installed here).
+        run: uv sync --package agent-capture-reporter --group dev
+      - name: Lint
+        run: uv run ruff check packages/reporter
+      - name: Format check
+        run: uv run ruff format --check packages/reporter
+      - name: Type check
+        run: uv run mypy --package agent_capture_reporter
+        working-directory: packages/reporter
+      - name: Test
+        run: uv run pytest -ra
+        working-directory: packages/reporter
+
+  enforcement:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ${{ github.event_name == 'push' && fromJSON('["3.11", "3.12", "3.13"]') || fromJSON('["3.12"]') }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install
+        # enforcement-dev brings aiosqlite for the SQLite-backed hold tests.
+        run: uv sync --package agent-capture-enforcement --group dev --group enforcement-dev
+      - name: Lint
+        run: uv run ruff check packages/enforcement
+      - name: Format check
+        run: uv run ruff format --check packages/enforcement
+      - name: Type check
+        run: uv run mypy --package agent_capture_enforcement
+        working-directory: packages/enforcement
+      - name: Test
+        run: uv run pytest -ra
+        working-directory: packages/enforcement
+
+  e2e:
+    # Cross-package proof: recorder -> ledger -> reporter in one process.
+    # The whole workspace is installed into one venv (the per-package jobs stay
+    # scoped to protect the recorder's memory-budget test); this job runs no
+    # perf tests.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ledger
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ledger"
+          --health-interval 3s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install
+        run: uv sync --all-packages --group dev --group ledger-dev
+      - name: Test (recorder -> ledger -> reporter)
+        env:
+          LEDGER_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/ledger
+        run: uv run pytest -ra -m e2e tests/e2e
+        working-directory: packages/ledger
+
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      # Version auto-detected from package.json `packageManager` field —
+      # do NOT pin a version here or pnpm/action-setup refuses to start.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r lint
+      - run: pnpm -r typecheck
+      - run: pnpm -r test
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install workspace (for dependency audit)
+        run: uv sync --all-packages --group dev
+      - name: pip-audit (dependency vulnerabilities)
+        run: uvx pip-audit --progress-spinner off
+      - name: bandit (SAST, high severity)
+        run: >-
+          uvx bandit -q -r
+          packages/python/src packages/ledger/src
+          packages/reporter/src packages/enforcement/src
+          --severity-level high --confidence-level high
+
+  images:
+    # The slowest jobs (buildx + Trivy). Only on main pushes, not every PR.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [ledger, enforcement]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - name: Build ${{ matrix.service }} image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: packages/${{ matrix.service }}/docker/Dockerfile
+          tags: agent-capture-${{ matrix.service }}:ci
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # Report-only for now (HIGH/CRITICAL, fixable). The build itself is the
+      # gate; flip exit-code to '1' once a base-image patch policy is set.
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: agent-capture-${{ matrix.service }}:ci
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"

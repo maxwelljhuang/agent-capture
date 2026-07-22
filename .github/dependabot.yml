@@ -1,0 +1,50 @@
+version: 2
+updates:
+  # Keep the CI actions current (and off deprecated runtimes).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # One PR per week for all action bumps instead of one-per-action.
+      actions:
+        patterns: ["*"]
+
+  # Python deps across the uv workspace (reads uv.lock + the member pyprojects).
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # Collapse the routine patch/minor churn into a single weekly PR;
+      # majors still open individually so they get a real review.
+      python-minor:
+        update-types: ["minor", "patch"]
+
+  # TypeScript SDK.
+  - package-ecosystem: "npm"
+    directory: "/packages/typescript"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor:
+        update-types: ["minor", "patch"]
+    ignore:
+      # vitest 4 requires a coordinated Vite 6 migration (vitest pulls vite,
+      # and v4 needs vite>=6 — see PR #23, which failed to even start the
+      # runner against the resolved vite 5). The 2.x line works and runs all
+      # tests; revisit the major deliberately, not via an auto-PR.
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+
+  # Service base images.
+  - package-ecosystem: "docker"
+    directory: "/packages/ledger/docker"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/packages/enforcement/docker"
+    schedule:
+      interval: "weekly"

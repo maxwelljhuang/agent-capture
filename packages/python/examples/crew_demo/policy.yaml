@@ -1,0 +1,32 @@
+# Customer-owned redaction policy for the CrewAI demo.
+#
+# Two layers are exercised:
+#   - pattern_rules: free-text recognizers (the SSN seeded in the kickoff
+#     `message` is caught by the US_SSN recognizer and fully redacted).
+#   - field_rules: dict-key matches (the structured `parent_email` /
+#     `parent_phone` we pass to kickoff are HMAC-fingerprinted, since email
+#     and phone are not in the v1 pattern pack).
+version: "demo-v1"
+default_strategy: full
+
+strategies:
+  full:
+    type: full
+  account_hash:
+    type: hmac
+    # The key lives in the env, never in this file (see README).
+    key_env: AGENT_CAPTURE_HMAC_KEY
+
+field_rules:
+  - field_name: parent_email
+    strategy: account_hash
+  - field_name: parent_phone
+    strategy: account_hash
+  - field_name: student_ssn
+    strategy: full
+
+pattern_rules:
+  - field_type: ssn
+    strategy: full
+  - field_type: date_of_birth
+    strategy: full

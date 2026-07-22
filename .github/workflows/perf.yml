@@ -1,0 +1,24 @@
+name: perf
+
+on:
+  # The budgets are recorder-specific — only run when the recorder changes.
+  pull_request:
+    paths: ["packages/python/**", ".github/workflows/perf.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      # Scope to the recorder package (the perf budgets are recorder-specific).
+      - run: uv sync --package agent-capture --all-extras --group dev
+      - name: Run performance budget tests
+        run: uv run pytest -m perf -ra
+        working-directory: packages/python

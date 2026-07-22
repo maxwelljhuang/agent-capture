@@ -1,0 +1,8 @@
+# Isolated deps for the CrewAI demo — NOT part of the agent-capture package.
+# Install into a throwaway venv alongside an editable agent-capture:
+#   pip install -e packages/python
+#   pip install -r packages/python/examples/crew_demo/requirements.txt
+#
+# Pin crewai to the version your target app uses (confirm with `pip show crewai`).
+crewai==1.14.1
+openai>=1.50

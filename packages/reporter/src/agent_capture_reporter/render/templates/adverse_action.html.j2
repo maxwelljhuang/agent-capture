@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Adverse Action Notice</title>
+  <style>{% include "notice.css" %}</style>
+</head>
+<body>
+
+  <h1>Notice of Adverse Action</h1>
+  <p class="meta">
+  <dl class="meta">
+    <dt>Creditor</dt><dd>{{ notice.creditor_id }}</dd>
+    <dt>Date of action</dt><dd>{{ notice.date_of_action }}</dd>
+    {% if notice.applicant_reference %}
+    <dt>Applicant ref.</dt><dd>{{ notice.applicant_reference }}</dd>
+    {% endif %}
+    <dt>Decision system</dt><dd>{{ notice.agent_version }}</dd>
+  </dl>
+  </p>
+
+  <h2>Action Taken</h2>
+  <p class="action">{{ notice.action_statement }}</p>
+  {% if notice.decision_rationale %}
+  <p>{{ notice.decision_rationale }}</p>
+  {% endif %}
+
+  <h2>Principal Reasons for the Adverse Action</h2>
+  <p>The principal reason(s) for our decision were:</p>
+  <ul class="reasons">
+    {% for reason in notice.principal_reasons %}
+    <li>{{ reason.text }}{% if not reason.known %} <span class="gap">[reason code "{{ reason.code }}" not mapped to standard language]</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Consumer Reporting Agency</h2>
+  {% if notice.credit_reporting_agencies %}
+  <p>
+    Our decision was based in whole or in part on information obtained from the
+    following consumer reporting agency/agencies. Under the Fair Credit
+    Reporting Act you have the right to obtain a free copy of your report from
+    the agency named below if you request it within 60 days, and to dispute the
+    accuracy or completeness of any information in the report.
+  </p>
+  <ul>
+    {% for cra in notice.credit_reporting_agencies %}
+    <li>{{ cra.source_identifier }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="gap">[NOT CAPTURED] No consumer reporting agency was recorded for this decision.</p>
+  {% endif %}
+
+  <h2>Protected-Class Compliance Check</h2>
+  {% if notice.protected_class_check %}
+  <p>
+    Automated check <em>{{ notice.protected_class_check.policy_name }}</em>
+    (v{{ notice.protected_class_check.policy_version }}) result:
+    <strong>{{ notice.protected_class_check.result }}</strong>.
+  </p>
+  {% else %}
+  <p class="gap">[NOT CAPTURED] No protected-class compliance check was recorded.</p>
+  {% endif %}
+
+  <h2>Human Review</h2>
+  {% if notice.human_review %}
+  <p>
+    Reviewed by role <strong>{{ notice.human_review.approver_role }}</strong>
+    ({{ notice.human_review.approver_identity }}) —
+    decision <strong>{{ notice.human_review.decision }}</strong>
+    at {{ notice.human_review.decision_timestamp }}.
+  </p>
+  {% else %}
+  <p class="gap">[NOT CAPTURED] No human review was recorded; this decision was made by an automated system.</p>
+  {% endif %}
+
+  <h2>Notice Delivery</h2>
+  {% if notice.notice_delivery %}
+  <p>
+    This notice was dispatched via <em>{{ notice.notice_delivery.action_type }}</em>
+    to {{ notice.notice_delivery.target_system }}
+    (delivery {% if notice.notice_delivery.success %}confirmed{% else %}<span class="gap">not confirmed</span>{% endif %}{% if notice.notice_delivery.idempotency_key %}, ref {{ notice.notice_delivery.idempotency_key }}{% endif %}).
+  </p>
+  {% else %}
+  <p class="gap">[NOT CAPTURED] No delivery of this notice has been recorded yet.</p>
+  {% endif %}
+
+  <h2>ECOA Notice</h2>
+  <p class="legal">
+    The federal Equal Credit Opportunity Act prohibits creditors from
+    discriminating against credit applicants on the basis of race, color,
+    religion, national origin, sex, marital status, age (provided the applicant
+    has the capacity to enter into a binding contract); because all or part of
+    the applicant's income derives from any public assistance program; or
+    because the applicant has in good faith exercised any right under the
+    Consumer Credit Protection Act. The federal agency that administers
+    compliance with this law concerning this creditor is the Consumer Financial
+    Protection Bureau, 1700 G Street NW, Washington, DC 20552.
+  </p>
+
+  {% if notice.credit_reporting_agencies %}
+  <h2>FCRA Disclosure</h2>
+  <p class="legal">
+    In evaluating your application we obtained information from a consumer
+    reporting agency. The reporting agency played no part in our decision and is
+    unable to supply specific reasons why we have taken adverse action. You have
+    a right under the Fair Credit Reporting Act to know the information contained
+    in your credit file at the consumer reporting agency. You also have a right
+    to a free copy of your report from the reporting agency if you request it no
+    later than 60 days after you receive this notice, and to dispute with the
+    reporting agency the accuracy or completeness of any information in your
+    report.
+  </p>
+  {% endif %}
+
+  {% if notice.model_governance %}
+  <p class="footer">
+    Model governance: {{ notice.model_governance.model_name }}{% if notice.model_governance.model_version %} ({{ notice.model_governance.model_version }}){% endif %},
+    provider {{ notice.model_governance.provider }}{% if notice.model_governance.model_card_version %}, model card {{ notice.model_governance.model_card_version }}{% endif %}{% if notice.model_governance.prompt_template_version %}, prompt {{ notice.model_governance.prompt_template_id }}@{{ notice.model_governance.prompt_template_version }}{% endif %}.
+  </p>
+  {% endif %}
+
+</body>
+</html>

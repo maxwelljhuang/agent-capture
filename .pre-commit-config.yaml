@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^packages/python/.*\.py$
+      - id: ruff-format
+        files: ^packages/python/.*\.py$
+  - repo: local
+    hooks:
+      - id: schema-sync
+        name: schema-sync
+        entry: python scripts/verify_schema_sync.py
+        language: system
+        pass_filenames: false
+        files: ^(packages/python/src/agent_capture/schema/.*\.py|schemas/.*\.json)$

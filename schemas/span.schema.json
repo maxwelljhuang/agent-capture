@@ -1,0 +1,868 @@
+{
+  "$defs": {
+    "ComplianceMetadata": {
+      "description": "Compliance metadata attached to every span at creation time.\n\nEvery field listed in Section 4.3 of the architecture document is\nrepresented here. None of these can be reconstructed after the fact \u2014\nthe prompt template version in use when the span was created, the\npolicy bundle in force, the regulatory regime applicable to the\ntrajectory: these must all be captured the moment the span is born.",
+      "properties": {
+        "agent_version": {
+          "description": "Version of the agent that produced this span.",
+          "title": "Agent Version",
+          "type": "string"
+        },
+        "data_classification": {
+          "$ref": "#/$defs/DataClassification",
+          "default": "internal",
+          "description": "Sensitivity classification of the payload."
+        },
+        "end_customer_id": {
+          "description": "Which regulated customer's environment this is running in.",
+          "title": "End Customer Id",
+          "type": "string"
+        },
+        "model_card_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Approved model card governing this model use. Only meaningful for model_call spans.",
+          "title": "Model Card Version"
+        },
+        "policy_version_active": {
+          "description": "Identifier of the compliance policy bundle in force when the span was created.",
+          "title": "Policy Version Active",
+          "type": "string"
+        },
+        "prompt_template_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Exact version of the prompt template used. Only meaningful for model_call spans.",
+          "title": "Prompt Template Version"
+        },
+        "regulatory_regime": {
+          "description": "Applicable regulations for this trajectory.",
+          "items": {
+            "$ref": "#/$defs/RegulatoryRegime"
+          },
+          "title": "Regulatory Regime",
+          "type": "array"
+        },
+        "retention_class": {
+          "$ref": "#/$defs/RetentionClass",
+          "default": "standard",
+          "description": "Retention classification governing this span's lifecycle."
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The entity the agent is acting on (loan applicant, account holder, etc.), redacted appropriately.",
+          "title": "Subject Id"
+        },
+        "tool_schema_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Schema version of any tool involved. Only meaningful for tool_call spans.",
+          "title": "Tool Schema Version"
+        }
+      },
+      "required": [
+        "policy_version_active",
+        "agent_version",
+        "end_customer_id"
+      ],
+      "title": "ComplianceMetadata",
+      "type": "object"
+    },
+    "DataClassification": {
+      "description": "Sensitivity classification of the payload.\n\nDrives default redaction posture if no per-field policy applies.",
+      "enum": [
+        "public",
+        "internal",
+        "PII",
+        "PCI",
+        "MNPI",
+        "PHI"
+      ],
+      "title": "DataClassification",
+      "type": "string"
+    },
+    "ErrorInfo": {
+      "description": "Structured error captured when a span's status is ``error``.",
+      "properties": {
+        "error_type": {
+          "description": "Fully-qualified exception type name.",
+          "title": "Error Type",
+          "type": "string"
+        },
+        "message": {
+          "description": "Human-readable error message, post-redaction.",
+          "title": "Message",
+          "type": "string"
+        },
+        "stack_trace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional stack trace, post-redaction. Capture is configurable.",
+          "title": "Stack Trace"
+        }
+      },
+      "required": [
+        "error_type",
+        "message"
+      ],
+      "title": "ErrorInfo",
+      "type": "object"
+    },
+    "HumanApprovalAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for a human reviewing and approving (or rejecting) a proposed action.",
+      "properties": {
+        "approver_identity": {
+          "title": "Approver Identity",
+          "type": "string"
+        },
+        "approver_role": {
+          "title": "Approver Role",
+          "type": "string"
+        },
+        "artifact_reviewed": {
+          "description": "Stable identifier of the artifact reviewed (e.g. document hash).",
+          "title": "Artifact Reviewed",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approved",
+            "rejected",
+            "escalated"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "decision_timestamp": {
+          "description": "ISO 8601 UTC timestamp of the decision.",
+          "title": "Decision Timestamp",
+          "type": "string"
+        },
+        "kind": {
+          "const": "human_approval",
+          "default": "human_approval",
+          "title": "Kind",
+          "type": "string"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional cryptographic signature over the decision. Format is policy-defined.",
+          "title": "Signature"
+        }
+      },
+      "required": [
+        "approver_identity",
+        "approver_role",
+        "decision",
+        "decision_timestamp",
+        "artifact_reviewed"
+      ],
+      "title": "HumanApprovalAttributes",
+      "type": "object"
+    },
+    "ModelCallAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for an LLM invocation.",
+      "properties": {
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "kind": {
+          "const": "model_call",
+          "default": "model_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Tokens"
+        },
+        "model_name": {
+          "title": "Model Name",
+          "type": "string"
+        },
+        "model_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Version"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "prompt_template_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Template Id"
+        },
+        "prompt_template_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Template Version"
+        },
+        "provider": {
+          "description": "e.g. 'anthropic', 'openai', 'bedrock', 'vertex'.",
+          "title": "Provider",
+          "type": "string"
+        },
+        "temperature": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Temperature"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        }
+      },
+      "required": [
+        "model_name",
+        "provider"
+      ],
+      "title": "ModelCallAttributes",
+      "type": "object"
+    },
+    "PlannerStepAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for an internal decision point in the agent's control flow.",
+      "properties": {
+        "chosen_option": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chosen Option"
+        },
+        "decision_rationale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Rationale"
+        },
+        "kind": {
+          "const": "planner_step",
+          "default": "planner_step",
+          "title": "Kind",
+          "type": "string"
+        },
+        "options_considered": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Options Considered",
+          "type": "array"
+        }
+      },
+      "title": "PlannerStepAttributes",
+      "type": "object"
+    },
+    "PolicyCheckAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for an automated rule evaluation.",
+      "properties": {
+        "kind": {
+          "const": "policy_check",
+          "default": "policy_check",
+          "title": "Kind",
+          "type": "string"
+        },
+        "policy_name": {
+          "title": "Policy Name",
+          "type": "string"
+        },
+        "policy_version": {
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "result": {
+          "enum": [
+            "pass",
+            "fail",
+            "warn",
+            "not_applicable"
+          ],
+          "title": "Result",
+          "type": "string"
+        },
+        "rule_details": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule Details"
+        }
+      },
+      "required": [
+        "policy_name",
+        "policy_version",
+        "result"
+      ],
+      "title": "PolicyCheckAttributes",
+      "type": "object"
+    },
+    "ProvenanceFields": {
+      "description": "Hash chain entries written at span close.\n\nBoth hashes are hex-encoded SHA-256 of the canonical JSON serialization\ndefined in :mod:`agent_capture.schema.canonical`. They are produced\n*after* redaction so the bytes hashed are exactly the bytes shipped.\n\nAttributes:\n    content_hash: SHA-256 of this span's canonical serialized form,\n        with ``provenance.content_hash`` itself excluded from the input.\n    parent_content_hash: ``content_hash`` of the parent span, or ``None``\n        for trajectory roots. Creates the chain that the ledger layer\n        verifies.\n    schema_version: The version of the span schema used to produce this\n        span. Hashes under different schema versions are not comparable.",
+      "properties": {
+        "content_hash": {
+          "description": "Hex SHA-256 of the canonical serialized span.",
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "parent_content_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hex SHA-256 of the parent span's canonical form. Null for trajectory roots.",
+          "title": "Parent Content Hash"
+        },
+        "schema_version": {
+          "default": "1.0.0",
+          "description": "Span schema version. See SCHEMA_VERSION in this module.",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_hash"
+      ],
+      "title": "ProvenanceFields",
+      "type": "object"
+    },
+    "RegulatoryRegime": {
+      "description": "Regulatory regimes recognized by the v1 schema.\n\nThe list is intentionally finance-first. Add new entries as verticals\nexpand; never repurpose existing values. Reporting downstream keys off\nthese strings.",
+      "enum": [
+        "ECOA",
+        "FCRA",
+        "SR_11-7",
+        "UDAAP",
+        "GLBA",
+        "BSA_AML",
+        "HIPAA",
+        "GDPR",
+        "CCPA"
+      ],
+      "title": "RegulatoryRegime",
+      "type": "string"
+    },
+    "RetentionClass": {
+      "description": "How long this span must be retained and under what rules.\n\nConcrete retention windows are policy-defined in the ledger layer; this\nenum is the *classification* that policy keys off.",
+      "enum": [
+        "standard",
+        "extended",
+        "litigation_hold",
+        "transient"
+      ],
+      "title": "RetentionClass",
+      "type": "string"
+    },
+    "RetrievalAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for fetching information from a knowledge source.",
+      "properties": {
+        "kind": {
+          "const": "retrieval",
+          "default": "retrieval",
+          "title": "Kind",
+          "type": "string"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query"
+        },
+        "relevance_scores": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Relevance Scores",
+          "type": "array"
+        },
+        "returned_document_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Returned Document Ids",
+          "type": "array"
+        },
+        "source_identifier": {
+          "description": "Vector DB name, doc store id, external API url, etc.",
+          "title": "Source Identifier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_identifier"
+      ],
+      "title": "RetrievalAttributes",
+      "type": "object"
+    },
+    "SideEffectAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for an action that affected the outside world.\n\nDistinct from ``tool_call`` because the question is about external state\nchange, not the agent's local action. A regulator asking 'did the agent\nactually send the denial letter?' is asking about this span type.",
+      "properties": {
+        "action_type": {
+          "description": "e.g. 'email.send', 'payment.transfer', 'record.update'.",
+          "title": "Action Type",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        },
+        "kind": {
+          "const": "side_effect",
+          "default": "side_effect",
+          "title": "Kind",
+          "type": "string"
+        },
+        "payload_summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-readable summary of what was sent. Full payload lives in span inputs.",
+          "title": "Payload Summary"
+        },
+        "success": {
+          "description": "Did the external action succeed?",
+          "title": "Success",
+          "type": "boolean"
+        },
+        "target_system": {
+          "description": "The external system that received the effect.",
+          "title": "Target System",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action_type",
+        "target_system",
+        "success"
+      ],
+      "title": "SideEffectAttributes",
+      "type": "object"
+    },
+    "SpanStatus": {
+      "description": "Terminal status of a span.\n\n``ok`` \u2014 the step completed normally.\n``error`` \u2014 the step raised; details in :class:`ErrorInfo`.\n``cancelled`` \u2014 the step was abandoned (timeout, parent failure, etc.).",
+      "enum": [
+        "ok",
+        "error",
+        "cancelled"
+      ],
+      "title": "SpanStatus",
+      "type": "string"
+    },
+    "SpanType": {
+      "description": "The discriminator naming the kind of step this span represents.\n\nMatches the ``kind`` field of each per-type attribute model in\n:mod:`agent_capture.schema.types`. The span builder enforces the match.",
+      "enum": [
+        "model_call",
+        "tool_call",
+        "retrieval",
+        "planner_step",
+        "sub_agent_invocation",
+        "human_approval",
+        "side_effect",
+        "policy_check"
+      ],
+      "title": "SpanType",
+      "type": "string"
+    },
+    "SubAgentInvocationAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for invoking another agent. The sub-agent's spans nest under this one.",
+      "properties": {
+        "kind": {
+          "const": "sub_agent_invocation",
+          "default": "sub_agent_invocation",
+          "title": "Kind",
+          "type": "string"
+        },
+        "sub_agent_identity": {
+          "title": "Sub Agent Identity",
+          "type": "string"
+        },
+        "sub_agent_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sub Agent Version"
+        }
+      },
+      "required": [
+        "sub_agent_identity"
+      ],
+      "title": "SubAgentInvocationAttributes",
+      "type": "object"
+    },
+    "ToolCallAttributes": {
+      "additionalProperties": false,
+      "description": "Attributes for invocation of a tool the agent has access to.",
+      "properties": {
+        "arguments": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Arguments"
+        },
+        "kind": {
+          "const": "tool_call",
+          "default": "tool_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "return_value": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Return Value"
+        },
+        "tool_name": {
+          "title": "Tool Name",
+          "type": "string"
+        },
+        "tool_schema_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Schema Version"
+        }
+      },
+      "required": [
+        "tool_name"
+      ],
+      "title": "ToolCallAttributes",
+      "type": "object"
+    }
+  },
+  "$id": "https://schemas.agent-capture.dev/span/v1.0.0/span.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "agent-capture span schema v1.0.0. Generated from the Pydantic models in packages/python/src/agent_capture/schema/. Do not edit by hand.",
+  "properties": {
+    "attributes": {
+      "description": "Per-type attribute payload. The 'kind' field matches the 'type' field above.",
+      "discriminator": {
+        "mapping": {
+          "human_approval": "#/$defs/HumanApprovalAttributes",
+          "model_call": "#/$defs/ModelCallAttributes",
+          "planner_step": "#/$defs/PlannerStepAttributes",
+          "policy_check": "#/$defs/PolicyCheckAttributes",
+          "retrieval": "#/$defs/RetrievalAttributes",
+          "side_effect": "#/$defs/SideEffectAttributes",
+          "sub_agent_invocation": "#/$defs/SubAgentInvocationAttributes",
+          "tool_call": "#/$defs/ToolCallAttributes"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ModelCallAttributes"
+        },
+        {
+          "$ref": "#/$defs/ToolCallAttributes"
+        },
+        {
+          "$ref": "#/$defs/RetrievalAttributes"
+        },
+        {
+          "$ref": "#/$defs/PlannerStepAttributes"
+        },
+        {
+          "$ref": "#/$defs/SubAgentInvocationAttributes"
+        },
+        {
+          "$ref": "#/$defs/HumanApprovalAttributes"
+        },
+        {
+          "$ref": "#/$defs/SideEffectAttributes"
+        },
+        {
+          "$ref": "#/$defs/PolicyCheckAttributes"
+        }
+      ],
+      "title": "Attributes"
+    },
+    "compliance": {
+      "$ref": "#/$defs/ComplianceMetadata",
+      "description": "Compliance metadata. Required on every span (Section 4.3)."
+    },
+    "end_time": {
+      "description": "High-resolution UTC end time.",
+      "format": "date-time",
+      "title": "End Time",
+      "type": "string"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ErrorInfo"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Required when status is 'error'."
+    },
+    "inputs": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Post-redaction inputs payload. Shape is per-type-specific.",
+      "title": "Inputs"
+    },
+    "name": {
+      "description": "Human-readable label for this span.",
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "outputs": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Post-redaction outputs payload. Shape is per-type-specific.",
+      "title": "Outputs"
+    },
+    "parent_span_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{16}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Identifier of the parent span. Null only for the trajectory root.",
+      "title": "Parent Span Id"
+    },
+    "provenance": {
+      "$ref": "#/$defs/ProvenanceFields",
+      "description": "Hash chain entries for the downstream ledger (Section 4.4)."
+    },
+    "span_id": {
+      "description": "Unique identifier for this span. 16 hex chars (OTel 8-byte span id).",
+      "pattern": "^[0-9a-f]{16}$",
+      "title": "Span Id",
+      "type": "string"
+    },
+    "start_time": {
+      "description": "High-resolution UTC start time.",
+      "format": "date-time",
+      "title": "Start Time",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/SpanStatus",
+      "default": "ok",
+      "description": "Terminal status."
+    },
+    "trajectory_id": {
+      "description": "Identifier shared by every span in this trajectory. 32 hex chars (OTel 16-byte trace id).",
+      "pattern": "^[0-9a-f]{32}$",
+      "title": "Trajectory Id",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/SpanType",
+      "description": "Kind of step. Matches attributes.kind."
+    }
+  },
+  "required": [
+    "span_id",
+    "trajectory_id",
+    "name",
+    "type",
+    "start_time",
+    "end_time",
+    "attributes",
+    "compliance",
+    "provenance"
+  ],
+  "title": "AgentCaptureSpan",
+  "type": "object"
+}

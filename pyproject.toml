@@ -1,0 +1,13 @@
+[tool.uv.workspace]
+members = ["packages/python", "packages/ledger", "packages/reporter", "packages/enforcement"]
+
+[tool.uv.sources]
+agent-capture = { workspace = true }
+
+# Dependency groups (testing, lint, typecheck) live in each workspace
+# member's own pyproject.toml. Use:
+#   uv sync --package agent-capture --all-extras --group dev
+#   uv sync --package agent-capture-ledger --group dev --group ledger-dev
+# CI jobs pick exactly the package + groups they need; this avoids
+# cross-contamination between members' venvs (one member's deps inflated
+# another member's perf-budget tests in an earlier iteration).

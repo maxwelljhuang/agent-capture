@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Node / TypeScript
+node_modules/
+*.tsbuildinfo
+.pnpm-store/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local artifacts
+*.log
+.env
+.env.local
+~/.agent-capture/
+spool/
+trajectory*.jsonl
+
+# Lockfiles for examples — keep root locks
+packages/*/examples/**/uv.lock
+packages/*/examples/**/package-lock.json
+
+# Local-only Claude dirs
+/.claude/
+/.venv-bootstrap/
+
+# Example output
+trajectory*.jsonl

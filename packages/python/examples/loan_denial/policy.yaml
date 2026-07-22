@@ -1,0 +1,44 @@
+# Customer-owned redaction policy bundle.
+#
+# This file lives in the END CUSTOMER's deployment, not the vendor's. The
+# vendor ships the SDK that loads it; the customer's security team controls
+# what their data can become.
+#
+# version is stamped on every span via compliance.policy_version_active.
+version: "lending-v2.3.1"
+
+# default_strategy applies to any recognized pattern with no explicit
+# pattern_rule override. "full" is the safe default.
+default_strategy: full
+
+strategies:
+  full:
+    type: full
+  account_hash:
+    type: hmac
+    # key_env points to an env var holding the HMAC key. The key NEVER
+    # appears in this file in production — it lives in the customer's
+    # secret store and is injected at deploy time.
+    key_env: AGENT_CAPTURE_HMAC_KEY
+
+field_rules:
+  - field_name: ssn
+    strategy: full
+  - field_name: social_security_number
+    strategy: full
+  - field_name: account_number
+    strategy: account_hash
+  - field_name: routing_number
+    strategy: account_hash
+
+pattern_rules:
+  - field_type: ssn
+    strategy: full
+  - field_type: account_number
+    strategy: account_hash
+  - field_type: routing_number
+    strategy: account_hash
+  - field_type: micr
+    strategy: account_hash
+  - field_type: date_of_birth
+    strategy: full

@@ -1,0 +1,75 @@
+@page {
+  size: Letter;
+  margin: 1in 0.9in 1in 0.9in;
+  @bottom-center {
+    content: "Adverse Action Notice — page " counter(page) " of " counter(pages);
+    font-size: 8pt;
+    color: #555;
+  }
+}
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #111;
+}
+
+h1 {
+  font-size: 16pt;
+  margin: 0 0 0.2em 0;
+}
+
+h2 {
+  font-size: 12pt;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 2px;
+  margin-top: 1.4em;
+}
+
+.meta {
+  font-size: 9.5pt;
+  color: #444;
+}
+
+.meta dt {
+  font-weight: bold;
+  float: left;
+  width: 9em;
+  clear: left;
+}
+
+.meta dd {
+  margin: 0 0 0.2em 9.5em;
+}
+
+.action {
+  font-size: 12pt;
+  font-weight: bold;
+  margin: 0.6em 0;
+}
+
+ul.reasons {
+  margin: 0.3em 0 0.3em 1.2em;
+}
+
+.gap {
+  color: #b00020;
+  font-style: italic;
+}
+
+.legal {
+  font-size: 9.5pt;
+  color: #222;
+  background: #f7f7f7;
+  border-left: 3px solid #999;
+  padding: 0.4em 0.8em;
+}
+
+.footer {
+  margin-top: 1.6em;
+  font-size: 8.5pt;
+  color: #666;
+  border-top: 1px solid #ddd;
+  padding-top: 0.4em;
+}

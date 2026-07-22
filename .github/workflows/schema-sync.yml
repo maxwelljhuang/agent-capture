@@ -1,0 +1,36 @@
+name: schema-sync
+
+on:
+  # Only relevant when the schema source, generated artifacts, or codegen change.
+  push:
+    branches: [main]
+    paths: &schema_paths
+      - "packages/python/src/agent_capture/schema/**"
+      - "schemas/**"
+      - "packages/typescript/src/schema/**"
+      - "scripts/**"
+  pull_request:
+    paths: *schema_paths
+
+concurrency:
+  group: schema-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - run: uv sync --group dev
+      - name: Verify JSON Schema is up to date
+        run: uv run python scripts/verify_schema_sync.py
+      - name: Regenerate TS types and diff
+        run: |
+          ./scripts/generate_ts_types.sh
+          if ! git diff --exit-code -- packages/typescript/src/schema; then
+            echo "::error::Generated TypeScript types are stale."
+            echo "Run ./scripts/generate_ts_types.sh and commit the result."
+            exit 1
+          fi

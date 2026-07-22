@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ledger
+    ports:
+      - "5432:5432"
+    volumes:
+      - ledger-db-data:/var/lib/postgresql/data
+      - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ledger"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  ledger:
+    build:
+      context: ../../..
+      dockerfile: packages/ledger/docker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      LEDGER_DATABASE_URL: postgresql+asyncpg://ledger_app:ledger_app@db:5432/ledger
+      LEDGER_DATABASE_URL_RETENTION: postgresql+asyncpg://ledger_retention:ledger_retention@db:5432/ledger
+      LEDGER_DATABASE_URL_MIGRATE: postgresql+asyncpg://postgres:postgres@db:5432/ledger
+      LEDGER_LOG_LEVEL: info
+    ports:
+      - "8443:8443"
+    entrypoint: ["tini", "--", "sh", "-c"]
+    command: ["ledger db migrate && ledger serve"]
+
+volumes:
+  ledger-db-data: {}

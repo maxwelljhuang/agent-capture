@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SR 11-7 Model Inventory</title>
+  <style>{% include "inventory.css" %}</style>
+</head>
+<body>
+
+  <h1>Model Inventory — Federal Reserve SR 11-7</h1>
+  <p class="meta">
+    Reporting period: <strong>{{ inv.period_start }}</strong> to <strong>{{ inv.period_end }}</strong>
+    {% if inv.tenant %} · Tenant: <strong>{{ inv.tenant }}</strong>{% endif %}
+    · Generated: {{ inv.generated_date }}
+    · Trajectories scanned: {{ inv.trajectories_scanned }}
+  </p>
+
+  <div class="summary">
+    <strong>{{ inv.total_models }}</strong> model(s) in use ·
+    <strong>{{ inv.governed_models }}</strong> governed (card + registry entry).
+    {% if inv.ungoverned_models %}
+    <br><span class="gap">Ungoverned (no governance card): {{ inv.ungoverned_models | join(", ") }}</span>
+    {% endif %}
+    {% if inv.unvalidated_models %}
+    <br><span class="gap">Not validated: {{ inv.unvalidated_models | join(", ") }}</span>
+    {% endif %}
+  </div>
+
+  <h2>Inventory</h2>
+  <table class="inventory">
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Model</th>
+        <th>Version</th>
+        <th>Model card</th>
+        <th>Intended use</th>
+        <th>Risk tier</th>
+        <th>Validation</th>
+        <th>Limitations</th>
+        <th>Monitoring</th>
+        <th>Usage (period)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in inv.entries %}
+      <tr {% if not e.governed %}class="ungoverned"{% endif %}>
+        <td>{{ e.provider }}</td>
+        <td>{{ e.model_name }}</td>
+        <td>{{ e.model_version or "—" }}</td>
+        <td>{% if e.usage.model_card_versions %}{{ e.usage.model_card_versions | join(", ") }}{% else %}<span class="gap">{{ "NO GOVERNANCE CARD" }}</span>{% endif %}</td>
+        <td>{% if e.governance.intended_use %}{{ e.governance.intended_use }}{% else %}<span class="gap">[NOT IN REGISTRY]</span>{% endif %}</td>
+        <td>{% if e.governance.risk_tier %}{{ e.governance.risk_tier }}{% else %}<span class="gap">[NOT IN REGISTRY]</span>{% endif %}</td>
+        <td>
+          {% if e.governance.source == "registry" and e.governance.validation_status %}
+            {{ e.governance.validation_status }}{% if e.governance.valid_until %} (until {{ e.governance.valid_until }}){% endif %}
+          {% else %}
+            <span class="gap">{{ e.governance.validation_status }}</span>
+          {% endif %}
+        </td>
+        <td>{% if e.governance.limitations %}{{ e.governance.limitations }}{% else %}<span class="gap">[NOT IN REGISTRY]</span>{% endif %}</td>
+        <td>{% if e.governance.monitoring %}{{ e.governance.monitoring }}{% else %}<span class="gap">[NOT IN REGISTRY]</span>{% endif %}</td>
+        <td>
+          {{ e.usage.decision_count }} call(s) over {{ e.usage.trajectory_count }} trajectory(ies)<br>
+          {{ e.usage.first_seen }} → {{ e.usage.last_seen }}<br>
+          {% if e.usage.total_tokens is not none %}{{ e.usage.total_tokens }} tokens{% if e.usage.tokens_partial %} <span class="gap">(partial)</span>{% endif %}{% else %}<span class="gap">tokens unavailable</span>{% endif %}<br>
+          prompts: {% if e.usage.prompt_versions %}{{ e.usage.prompt_versions | join(", ") }}{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="note">
+    Identity, model card, and usage columns are derived from recorded
+    <code>model_call</code> spans and are tamper-evident via the span hash chain.
+    Intended use, risk tier, validation status, limitations, and monitoring are
+    sourced from the customer-supplied model governance registry and are
+    <strong>outside</strong> the span hash chain. Per-row evidence digests and
+    span citations are in the accompanying manifest.
+  </p>
+
+</body>
+</html>
