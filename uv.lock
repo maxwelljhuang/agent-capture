@@ -269,7 +269,7 @@ dev = [
 ]
 ledger-dev = [
     { name = "aiosqlite", specifier = ">=0.20" },
-    { name = "testcontainers", extras = ["postgres"], specifier = ">=4.7" },
+    { name = "testcontainers", extras = ["postgres"], specifier = ">=4.14.2" },
 ]
 
 [[package]]
