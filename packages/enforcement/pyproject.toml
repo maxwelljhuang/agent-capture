@@ -24,7 +24,7 @@ dependencies = [
     "agent-capture",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "sqlalchemy[asyncio]>=2.0",
+    "sqlalchemy[asyncio]>=2.0.51",
     "asyncpg>=0.29",
     "alembic>=1.13",
     "pydantic>=2.7",
