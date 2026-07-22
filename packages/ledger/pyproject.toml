@@ -53,7 +53,7 @@ dev = [
 # Heavy integration-test deps; opt in only on the ledger CI job.
 # testcontainers pulls a full docker SDK + requests tree.
 ledger-dev = [
-    "testcontainers[postgres]>=4.7",
+    "testcontainers[postgres]>=4.14.2",
     "aiosqlite>=0.20",
 ]
 
