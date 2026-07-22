@@ -27,7 +27,7 @@ dependencies = [
     "opentelemetry-sdk>=1.25",
     "httpx>=0.27",
     "cryptography>=42",
-    "typing-extensions>=4.10",
+    "typing-extensions>=4.16.0",
     "pyyaml>=6.0",
 ]
 

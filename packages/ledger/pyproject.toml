@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-s3 = ["boto3>=1.34"]
+s3 = ["boto3>=1.43.54"]
 kms = ["google-cloud-kms>=2.21"]
 
 [dependency-groups]

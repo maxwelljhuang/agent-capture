@@ -39,7 +39,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.6",
+    "ruff>=0.15.22",
     "mypy>=1.11",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
